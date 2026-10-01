@@ -1,0 +1,18 @@
+{
+  "name": "Micromachine — corsa a microscala",
+  "short_name": "Micromachine",
+  "description": "Corsa a microscala sui tavoli di casa: 4 piloti, 3 giri, stile Micro Machines.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#16131c",
+  "theme_color": "#16131c",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}

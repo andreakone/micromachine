@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<script>
+/* diagnostica caricamento: visibile anche se il resto del JS muore */
+(function () {
+  function bar(msg) {
+    function show() {
+      if (document.getElementById('booterr')) return;
+      var d = document.createElement('div');
+      d.id = 'booterr';
+      d.setAttribute('style', 'position:fixed;left:0;right:0;bottom:0;z-index:999;background:#8e1f18;color:#fff;padding:10px 14px;font:13px/1.45 system-ui,sans-serif;display:flex;gap:12px;align-items:center');
+      var t = document.createElement('span');
+      t.textContent = 'Errore di caricamento: ' + msg;
+      var b = document.createElement('button');
+      b.textContent = 'RICARICA';
+      b.setAttribute('style', 'margin-left:auto;padding:6px 14px;font-weight:700;border:2px solid #fff;background:#e8452f;color:#fff;font:inherit;cursor:pointer');
+      b.onclick = function () { location.reload(); };
+      d.appendChild(t); d.appendChild(b);
+      if (document.body) document.body.appendChild(d);
+      else document.addEventListener('DOMContentLoaded', function () { document.body.appendChild(d); });
+    }
+    show();
+  }
+  window.__bootErr = bar;
+  window.__missing = function (f) {
+    bar('file non trovato: ' + f + ' — apri invece APRI-QUESTO.html (file unico, funziona ovunque)');
+  };
+  window.addEventListener('error', function (e) {
+    bar((e.message || 'errore sconosciuto') + (e.lineno ? ' (riga ' + e.lineno + ')' : ''));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    bar(String(e.reason || e));
+  });
+  document.addEventListener('DOMContentLoaded', function () {
+    var ui = document.getElementById('ui');
+    if (ui && getComputedStyle(ui).position !== 'absolute') window.__missing('css/style.css');
+    if (!document.getElementById('btn-play')) bar('index.html incompleto (aperto da: ' + location.href + ')');
+    if (typeof window.MM === 'undefined') window.__missing('js/util.js o altri js/*');
+  });
+})();
+</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#16131c">
+<title>Micromachine — corsa a microscala</title>
+<link rel="stylesheet" href="css/style.css" onerror="__missing('css/style.css')">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-180.png">
+  </head>
+<body>
+<div id="app">
+  <canvas id="view" width="640" height="360" aria-label="Pista di gara"></canvas>
+  <div id="crt" aria-hidden="true"></div>
+
+  <div id="load" class="panel load">
+    <div class="load-title">MICROMACHINE</div>
+    <div class="load-track"><i id="loadbar"></i></div>
+    <div id="loadtext" class="load-text">preparazione del tavolo…</div>
+  </div>
+
+  <div id="ui">
+    <!-- TITOLO -->
+    <section id="scr-title" class="screen">
+      <div class="menu-col">
+        <h1 class="logo"><span class="l1">MICRO</span><span class="l2">MACHINE</span></h1>
+        <p class="tagline">corsa a microscala sui tavoli di casa · 4 piloti · 3 giri</p>
+        <div class="btn-col">
+          <button id="btn-play" class="btn btn-primary">GIOCA</button>
+          <button id="btn-help" class="btn">COMANDI</button>
+          <button id="btn-quality" class="btn btn-ghost">QUALITÀ · <b id="quality-val">640×360</b></button>
+          <button id="btn-audio" class="btn btn-ghost">AUDIO · <b id="audio-val">ON</b></button>
+          <button id="btn-touch" class="btn btn-ghost">CONTROLLI · <b id="touch-val">TOUCH</b></button>
+          <button id="btn-install" class="btn btn-primary hidden">INSTALLA SULLO SCHERMO</button>
+        </div>
+        <p class="hint" id="title-hint">frecce o A/D per sterzare · SPAZIO usa oggetto · P pausa</p>
+      </div>
+    </section>
+
+    <!-- SELEZIONE PISTA -->
+    <section id="scr-select" class="screen">
+      <div class="panel wide">
+        <h2 class="panel-title">SCEGLI IL TAVOLO</h2>
+        <div id="cards" class="cards"></div>
+        <div class="row">
+          <button id="btn-back-title" class="btn btn-ghost">INDIETRO</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMANDI -->
+    <section id="scr-help" class="screen">
+      <div class="panel">
+        <h2 class="panel-title">COMANDI</h2>
+        <dl class="keys">
+          <dt>← → / A D</dt><dd>sterzare</dd>
+          <dt>↑ / W</dt><dd>accelerare</dd>
+          <dt>↓ / S</dt><dd>freno e retromarcia</dd>
+          <dt>SPAZIO</dt><dd>usa l'oggetto</dd>
+          <dt>P / ESC</dt><dd>pausa</dd>
+          <dt>M</dt><dd>audio on/off</dd>
+        </dl>
+        <p class="note touch-only">Su telefono/tablet: ◀ ▶ a sinistra per sterzare, GAS e FRENO a destra,
+        ◎ usa l'oggetto, II mette in pausa, ⛶ apre lo schermo intero.</p>
+        <p class="note">Sul tavolo si cade: resta sul nastro adesivo, oltre i bordi è il vuoto.
+        Le buche e le pozzanghere fanno perdere aderenza. Il raccoglitore dà turbo, olio o missile.</p>
+        <div class="row">
+          <button id="btn-back-help" class="btn btn-ghost">INDIETRO</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div class="hud-tl">
+        <div id="hud-pos" class="pos">1°</div>
+        <div id="hud-lap" class="lap">GIRO 1/3</div>
+      </div>
+      <div class="hud-tc">
+        <div id="hud-time" class="time">0:00.00</div>
+        <div id="hud-best" class="best">—</div>
+      </div>
+      <div class="hud-tr">
+        <div id="hud-item" class="item" data-empty="1">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path id="item-icon" d=""/></svg>
+        </div>
+      </div>
+      <div class="hud-bl"><canvas id="minimap" width="132" height="92"></canvas></div>
+      <div class="hud-br">
+        <div id="hud-speed" class="speed">0</div>
+        <div class="speed-unit">km/h</div>
+        <div class="speed-bar"><i id="speed-bar"></i></div>
+      </div>
+      <div id="center-msg" class="center-msg"></div>
+    </div>
+
+    <!-- PAUSA -->
+    <section id="scr-pause" class="screen">
+      <div class="panel">
+        <h2 class="panel-title">PAUSA</h2>
+        <div class="btn-col">
+          <button id="btn-resume" class="btn btn-primary">RIPRENDI</button>
+          <button id="btn-restart" class="btn">RICOMINCIA</button>
+          <button id="btn-quit" class="btn btn-ghost">MENU</button>
+          <button id="btn-fs" class="btn btn-ghost">SCHERMO INTERO</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RISULTATI -->
+    <section id="scr-results" class="screen">
+      <div class="panel wide">
+        <h2 class="panel-title" id="results-title">RISULTATI</h2>
+        <ol id="results-list" class="results"></ol>
+        <div class="row">
+          <button id="btn-again" class="btn btn-primary">RIGIOCA</button>
+          <button id="btn-change" class="btn">CAMBIA TAVOLO</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="flash"></div>
+  </div>
+
+  <!-- CONTROLLI TOUCH -->
+  <div id="touch" class="hidden" aria-hidden="true">
+    <div class="pad pad-left">
+      <button class="tbtn" data-btn="left">◀</button>
+      <button class="tbtn" data-btn="right">▶</button>
+    </div>
+      <div class="pad pad-right">
+      <button class="tbtn tbtn-item" data-btn="item" id="touch-item">◎</button>
+      <button class="tbtn tbtn-brake" data-btn="brake">FRENO</button>
+      <button class="tbtn tbtn-gas" data-btn="gas">GAS</button>
+    </div>
+    <button class="tbtn tbtn-pause" data-btn="pause" aria-label="pausa">II</button>
+    <button class="tfs" id="touch-fs" aria-label="schermo intero">⛶</button>
+  </div>
+
+  <!-- ROTAZIONE SCHERMO (solo touch in verticale) -->
+  <div id="rotate" aria-hidden="true">
+    <div class="rotate-in">
+      <div class="rotate-ico">↻</div>
+      <p>ruota lo schermo<br>in orizzontale</p>
+    </div>
+  </div>
+</div>
+
+<script src="js/util.js" onerror="__missing('js/util.js')"></script>
+<script src="js/audio.js" onerror="__missing('js/audio.js')"></script>
+<script src="js/input.js" onerror="__missing('js/input.js')"></script>
+<script src="js/tracks.js" onerror="__missing('js/tracks.js')"></script>
+<script src="js/render.js" onerror="__missing('js/render.js')"></script>
+<script src="js/physics.js" onerror="__missing('js/physics.js')"></script>
+<script src="js/ai.js" onerror="__missing('js/ai.js')"></script>
+<script src="js/game.js" onerror="__missing('js/game.js')"></script>
+<script src="js/main.js" onerror="__missing('js/main.js')"></script>
+</body>
+</html>
